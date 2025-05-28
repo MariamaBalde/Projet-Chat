@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.active-sidebar-btn {
+  background-color: #e1b44a ;
+  border-color: #eab308;  
+}

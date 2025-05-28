@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <link rel="stylesheet" href="./src/index.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+    integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vite App</title>
+</head>
+
+<body>
+  <div id="app">
+    <div
+      class="container mx-auto mt-5 h-[920px]  shadow-[0_0_20px_rgba(0,0,0,0.15)] overflow-hidden bg-white rounded  flex flex-row">
+      <div class="sidebar basis-28 bg-[#f0efe8] font-medium px-2 flex flex-col justify-center gap-4">
+        <button type="submit"
+          class="sms flex flex-col justify-center text-center border-2 border-yellow-500 rounded-lg p-5 active:bg-[#f7e6b3]">
+          <p> <i class="fa-solid fa-message" style="color: #000000;"></i>
+          </p>
+          <p>Messages</p>
+        </button>
+        <button class="sms flex flex-col justify-center text-center border-2 border-yellow-500 rounded-lg p-5">
+          <i class="fa-solid fa-user-group" style="color: #000000;"></i>
+          <p>Groupes</p>
+        </button>
+        <button class="sms flex flex-col justify-center text-center border-2 border-yellow-500 rounded-lg p-5">
+          <i class="fa-solid fa-arrows-turn-to-dots" style="color: #000000;"></i>
+          <p>Diffusions</p>
+        </button>
+        <button class="sms flex flex-col justify-center text-center border-2 border-yellow-500 rounded-lg p-5">
+          <i class="fa-solid fa-box-archive" style="color: #000000;"></i>
+          <p>Archives</p>
+        </button>
+        <button class="sms flex flex-col justify-center text-center border-2 border-yellow-500 rounded-lg p-5">
+          <i class="fa-solid fa-plus" style="color: #000000;"></i>
+          <p>Nouveau</p>
+        </button>
+      </div>
+      <div class="discussion basis-2/4 bg-[#f9f7f5] p-2">
+        <h2 class="text-2xl">Discussions</h2>
+        <p class="border-2 border-[#f2f0ea] rounded-full bg-transparent"></p>
+        <div class="recherche w-full">
+          <input class="recherche mt-1 border-2 border-[#f2f0ea] w-full h-8 px-2 rounded" placeholder="Recherche">
+        </div>
+      </div>
+      <div class="last-part   basis-full">
+        <div class="message h-[92%]  bg-[#efe7d7]">
+          <div class="cercle flex flex-row justify-between p-1">
+            <div class="big-cercle">
+              <p class="rounded-full bg-[#737572] w-[35px] h-[35px]"></p>
+            </div>
+            <div class="other-cercle flex flex-row gap-2">
+              <p
+                class="rounded-full border border-orange-600 w-[33px] h-[33px] flex flex-row justify-center text-center">
+                <i class="fa-solid fa-delete-left mt-2 px-2" style="color: #ff4d00;"></i>
+              </p>
+
+              <p
+                class="rounded-full border border-[#978f83] w-[33px] h-[33px] flex flex-row justify-center text-center">
+                <i class="fa-solid fa-box-archive mt-2 px-2" style="color: #7c7d7e;"></i>
+              </p>
+
+              <p
+                class="rounded-full border border-[#252024] w-[33px] h-[33px] flex flex-row justify-center text-center">
+                <i class="fa-solid fa-square mt-2 px-2" style="color: #19191a;"></i>
+              </p>
+
+              <p
+                class="rounded-full border border-[#9a0609] w-[33px] h-[33px] flex flex-row justify-center text-center">
+                <i class="fa-solid fa-trash mt-2 px-2" style="color: #db0a1f;"></i>
+              </p>
+            </div>
+          </div>
+          <div class="trait">
+            <p class="border-2 border-[#f2f0ea] rounded-full bg-transparent"></p>
+          </div>
+        </div>
+        <div class="footer h-[5%] basis-full my-5 mx-2 flex flex-row gap-2">
+  <div class="basis-full flex items-center">
+    <input
+      type="text"
+      class="w-full bg-[#f2eff0] py-2 px-4 rounded-lg border border-gray-200 outline-none"
+      placeholder="Votre message..."
+    />
+  </div>
+  <div class="basis-2 flex items-center">
+    <button type="submit" class="rounded-full bg-[#46cc40] w-[35px] h-[35px] flex flex-row justify-center items-center">
+      <i class="fa-solid fa-arrow-right" style="color: #ffffff;"></i>
+    </button>
+  </div>
+</div>
+        <!-- <div class="footer h-[5%] basis-full my-5 mx-2 flex flex-row gap-2">
+          <div class="basis-full">
+            <p class="bg-[#f2eff0] py-4 rounded-lg "></p>
+          </div>
+          <div class="basis-2">
+           
+              <button type="submit" class="rounded-full bg-[#46cc40] w-[35px] h-[35px] flex flex-row justify-center">
+              <i class="fa-solid fa-arrow-right mt-2 px-2" style="color: #ffffff;"></i>
+            </button>
+          </div>
+        </div> -->
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
