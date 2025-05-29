@@ -17,13 +17,10 @@ function clearDiscussion() {
 }
 
 export function initializeContacts() {
-  contacts.forEach(c => {
-    if (typeof c.archived === "undefined") 
-      c.archived = false;
-    
+  contacts.forEach((c) => {
+    if (typeof c.archived === "undefined") c.archived = false;
   });
 }
-
 
 export function showAddContactForm() {
   clearDiscussion();
@@ -36,17 +33,19 @@ export function showAddContactForm() {
   const form = document.createElement("form");
   form.id = "add-contact-form";
   form.className =
-    "bg-white p-4 rounded shadow flex flex-col gap-2 my-6 w-80 mx-auto";
+    "bg-white p-4 rounded shadow flex flex-col gap-2 my-6 w-[100%] mx-auto";
 
   form.innerHTML = `
     <h2 class="text-lg font-bold mb-2 text-center">Ajouter un contact</h2>
     <input type="text" id="contact-name" class="border p-2 rounded" placeholder="Nom"/>
+          <div id="name-error" class="text-red-600 text-xs mt-1 mb-2" style="display:none;"></div>
+
     <input type="tel" id="contact-phone" class="border p-2 rounded" placeholder="Numéro de téléphone" />
       <div id="phone-error" class="text-red-600 text-xs mt-1 mb-2" style="display:none;"></div>
 
     <div class="flex gap-2 justify-end">
-      <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded">Ajouter</button>
-      <button type="button" id="cancel-add-contact" class="bg-gray-300 px-4 py-2 rounded">Annuler</button>
+      <button type="submit" class="bg-[#46cc40] text-white px-4 py-2 rounded">Ajouter</button>
+      <button type="button" id="cancel-add-contact"  class="bg-[#efe7d7] px-4 py-2 text-gray-400 rounded">Annuler</button>
     </div>
   `;
 
@@ -58,7 +57,19 @@ export function showAddContactForm() {
     e.preventDefault();
     const name = form.querySelector("#contact-name").value.trim();
     const phone = form.querySelector("#contact-phone").value.trim();
-    const errorDiv = form.querySelector("#phone-error");
+    const errorDiv = form.querySelector("#phone-error,#name-error");
+    const nameInput = form.querySelector("#contact-name");
+    if (!name.trim()) {
+      errorDiv.textContent = "Le nom est obligatoire.";
+      errorDiv.style.display = "block";
+      nameInput.style.borderLeft = "3px solid red";
+      return;
+    }
+    if (!/^[A-Za-zÀ-ÿ\s]+$/.test(name)) {
+      errorDiv.textContent = "Le nom doit contenir uniquement des lettres.";
+      errorDiv.style.display = "block";
+      return;
+    }
 
     if (!/^\d+$/.test(phone)) {
       errorDiv.textContent = "Le numéro doit contenir uniquement des chiffres.";
@@ -90,12 +101,10 @@ export function addContact(name, phone) {
     i++;
   }
 
-  contacts.push({ name: uniqueName, phone ,archived: false });
-  renderContacts();
+  contacts.push({ name: uniqueName, phone, archived: false });
+  // renderContacts();
   renderContactsInMessage();
 }
-
-
 
 export function renderContacts() {
   clearDiscussion();
@@ -109,9 +118,11 @@ export function renderContacts() {
   list.id = "contacts-list";
   list.className = "mt-4 flex flex-col gap-2";
 
-  const sortedContacts = [...contacts].filter(c => !c.archived).sort((a, b) =>
-    a.name.localeCompare(b.name, "fr", { sensitivity: "base" })
-  );
+  const sortedContacts = [...contacts]
+    .filter((c) => !c.archived)
+    .sort((a, b) =>
+      a.name.localeCompare(b.name, "fr", { sensitivity: "base" })
+    );
 
   if (sortedContacts.length === 0) {
     list.innerHTML = `<p class="text-gray-500 text-sm">Aucun contact pour le moment.</p>`;
@@ -119,7 +130,9 @@ export function renderContacts() {
     list.innerHTML = sortedContacts
       .map(
         (c, idx) => `
-        <div class="contact-item flex items-center gap-2 border p-2 rounded bg-[#f2f0ea]" data-contact-index="${contacts.indexOf(c)}">
+        <div class="contact-item flex items-center gap-2 border p-2 rounded bg-[#f2f0ea]" data-contact-index="${contacts.indexOf(
+          c
+        )}">
           <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-lg font-bold uppercase">
             ${c.name[0]}
           </div>
@@ -135,15 +148,13 @@ export function renderContacts() {
 
   discussion.appendChild(list);
 
-  list.querySelectorAll('.contact-item').forEach(item => {
+  list.querySelectorAll(".contact-item").forEach((item) => {
     item.onclick = () => {
-      const idx = item.getAttribute('data-contact-index');
+      const idx = item.getAttribute("data-contact-index");
       showContactInMessage(contacts[idx]);
     };
   });
 }
-
-
 
 export function renderContactsInMessage() {
   const messagePart = document.querySelector(".discussion .message");
@@ -179,7 +190,9 @@ export function showCreateGroupForm() {
   const oldForm = document.getElementById("create-group-form");
   if (oldForm) oldForm.remove();
 
-  const contactsToAdd = contacts.filter((c) => c.name !== currentUser);
+  const contactsToAdd = contacts.filter(
+    (c) => c.name !== currentUser && c.archived !== true
+  );
 
   const form = document.createElement("form");
   form.id = "create-group-form";
@@ -188,7 +201,8 @@ export function showCreateGroupForm() {
 
   form.innerHTML = `
     <h2 class="text-lg font-bold mb-2 text-center">Créer un groupe</h2>
-    <input type="text" id="group-name" class="border p-2 rounded" placeholder="Nom du groupe" required />
+    <input type="text" id="group-name" class="border p-2 rounded" placeholder="Nom du groupe"/>
+    <div id="group-name-error" class="text-red-600 text-xs mt-1" style="display: none;"></div>
     <label class="font-semibold mt-2">Membres du groupe (min 2):</label>
     <div id="members-list" class="flex flex-col gap-1 mb-2">
       <label>
@@ -213,6 +227,8 @@ export function showCreateGroupForm() {
       <div id="new-member-error" class="text-red-600 text-xs" style="display:none;"></div>
       <button type="button" id="add-new-member" class="bg-green-500 text-white px-2 py-1 rounded text-xs mt-1">Ajouter à la liste</button>
     </div>
+    <div id="members-error" class="text-red-600 text-sm font-semibold text-left" style="display: none;"></div>
+
     <div class="flex gap-2 justify-end">
       <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Créer</button>
       <button type="button" id="cancel-create-group" class="bg-gray-300 px-4 py-2 rounded">Annuler</button>
@@ -221,16 +237,27 @@ export function showCreateGroupForm() {
 
   discussion.appendChild(form);
 
-  // Annuler
   form.querySelector("#cancel-create-group").onclick = () => form.remove();
 
-  // Ajouter un nouveau membre à la liste temporaire
   form.querySelector("#add-new-member").onclick = () => {
     const name = form.querySelector("#new-member-name").value.trim();
     const phone = form.querySelector("#new-member-phone").value.trim();
     const errorDiv = form.querySelector("#new-member-error");
 
-    // Validation
+    const nameInput = form.querySelector("#group-name");
+    const nameI = nameInput.value.trim();
+    const nameError = form.querySelector("#group-name-error");
+
+    if (!nameI) {
+      nameError.textContent = "Le nom du groupe est obligatoire";
+      nameError.style.display = "block";
+      nameInput.classList.add("border-l-4", "border-red-500");
+      return;
+    } else {
+      nameError.style.display = "none";
+      nameInput.classList.remove("border-l-4", "border-red-500");
+    }
+
     if (!/^[A-Za-zÀ-ÿ\s]+$/.test(name)) {
       errorDiv.textContent = "Nom invalide (lettres uniquement)";
       errorDiv.style.display = "block";
@@ -248,26 +275,7 @@ export function showCreateGroupForm() {
     }
     errorDiv.style.display = "none";
 
-    // Ajoute à la liste des membres à cocher
     const membersList = form.querySelector("#members-list");
-    //     const label = document.createElement("label");
-    //     label.innerHTML = `
-    //       <input type="checkbox" class="member-checkbox" value="${name}" checked />
-    //       <span class="ml-1">${name} (${phone})</span>
-    //     `;
-    //     membersList.appendChild(label);
-
-    //     // Ajoute aussi dans contacts (pour la suite)
-    //     // addContact(name, phone);
-    //     // Ajoute dans contacts sans rafraîchir la vue
-    // let baseName = name.trim();
-    // let uniqueName = baseName;
-    // let i = 2;
-    // while (contacts.some(c => c.name === uniqueName)) {
-    //   uniqueName = baseName + i;
-    //   i++;
-    // }
-    // contacts.push({ name: uniqueName, phone });
     let baseName = name.trim();
     let uniqueName = baseName;
     let i = 2;
@@ -282,30 +290,31 @@ export function showCreateGroupForm() {
   `;
     membersList.appendChild(label);
 
-    // Ajoute dans contacts sans rafraîchir la vue
-    // contacts.push({ name: uniqueName, phone });
     contacts.push({ name: uniqueName, phone, archived: false });
 
-    // Vide les champs
     form.querySelector("#new-member-name").value = "";
     form.querySelector("#new-member-phone").value = "";
   };
 
-  // Création du groupe
   form.onsubmit = (e) => {
     e.preventDefault();
     const name = form.querySelector("#group-name").value.trim();
     const checkedBoxes = form.querySelectorAll(".member-checkbox:checked");
-    // On ne compte pas currentUser (case disabled)
+    const membersError = form.querySelector("#members-error");
     const selectedMembers = Array.from(checkedBoxes)
       .map((cb) => cb.value)
       .filter((v) => v !== currentUser);
 
     if (selectedMembers.length < 2) {
-      alert("Sélectionnez au moins deux membres !");
+      membersError.textContent =
+        "Veuillez ajouter au moins deux membres";
+      membersError.style.display = "block";
       return;
+    } else {
+      membersError.style.display = "none";
     }
-    // Toujours inclure currentUser comme admin
+
+
     const members = [currentUser, ...selectedMembers];
     const uniqueMembers = [...new Set(members)];
 
@@ -324,8 +333,6 @@ export function createGroup(name, members) {
     messages: [],
   });
 }
-
-
 
 export function renderGroups() {
   const discussion = document.querySelector(".discussion");
@@ -371,13 +378,13 @@ export function renderGroups() {
   discussion.appendChild(list);
   list.querySelectorAll(".add-member-btn").forEach((btn) => {
     btn.onclick = (e) => {
-      e.stopPropagation(); 
+      e.stopPropagation();
       const idx = btn.getAttribute("data-group-index");
       const group = myGroups[idx];
       const formDiv = document.getElementById(`add-member-form-${idx}`);
 
       const contactsToAdd = contacts.filter(
-        (c) => !group.members.includes(c.name)
+        (c) => !group.members.includes(c.name) && !c.archived
       );
 
       formDiv.innerHTML = `
@@ -392,19 +399,9 @@ export function renderGroups() {
         </select>
         <button class="bg-blue-500 text-white px-2 py-1 rounded text-xs add-member-validate">Ajouter</button>
       </div>
-      <div class="flex flex-col gap-1 mt-2">
-        <input type="text" class="border p-1 rounded new-member-name" placeholder="Nom" />
-        <input type="tel" class="border p-1 rounded new-member-phone" placeholder="Numéro" />
-        <div class="text-red-600 text-xs new-member-error" style="display:none;"></div>
-        <button class="bg-green-500 text-white px-2 py-1 rounded text-xs mt-1 add-new-member-direct">Ajouter ce nouveau contact</button>
-           <button type="button" class="bg-gray-300 px-4 py-2 rounded mt-1 cancel-add-member">Annuler</button>
-
-      </div>
+      
     `;
 
-      formDiv.querySelector(".cancel-add-member").onclick = () => {
-        formDiv.style.display = "none";
-      };
       formDiv.querySelector(".add-member-validate").onclick = () => {
         const select = formDiv.querySelector(".add-member-select");
         const name = select.value;
@@ -413,42 +410,9 @@ export function renderGroups() {
           renderGroups();
         }
       };
-
-      formDiv.querySelector(".add-new-member-direct").onclick = (ev) => {
-        ev.preventDefault();
-        const nameInput = formDiv.querySelector(".new-member-name");
-        const phoneInput = formDiv.querySelector(".new-member-phone");
-        const errorDiv = formDiv.querySelector(".new-member-error");
-        const name = nameInput.value.trim();
-        const phone = phoneInput.value.trim();
-
-        // Validation
-        //   if (!/^[A-Za-zÀ-ÿ\s]+$/.test(name)) {
-        //     errorDiv.textContent = "Nom invalide (lettres uniquement)";
-        //     errorDiv.style.display = "block";
-        //     return;
-        //   }
-        if (!/^\d+$/.test(phone)) {
-          errorDiv.textContent = "Numéro invalide (chiffres uniquement)";
-          errorDiv.style.display = "block";
-          return;
-        }
-        if (contacts.some((c) => c.phone === phone)) {
-          errorDiv.textContent = "Ce numéro existe déjà !";
-          errorDiv.style.display = "block";
-          return;
-        }
-        errorDiv.style.display = "none";
-
-        addContact(name, phone);
-        group.members.push(name);
-        renderGroups();
-      };
-
-      formDiv.style.display = "block";
+         formDiv.style.display = "block";
     };
   });
-
 
   list.querySelectorAll(".group-item").forEach((item) => {
     item.onclick = () => {
@@ -465,22 +429,18 @@ export function showGroupMessages(group) {
   const messagePart = document.querySelector(".last-part .message");
   if (!messagePart) return;
 
-  // Liste des membres formatée
   const membersDisplay = group.members
     .map((member) => {
-      const contact = contacts.find((c) => c.name === member);
+      const contact = contacts.find((c) => c.name === member && !c.archived);
       if (contact) {
-        return `${contact.name} (${contact.phone})`;
+        return `${contact.name} 
+        `;
       }
-      // Si pas trouvé, c'est peut-être un numéro direct
-      if (/^\+?\d+$/.test(member)) {
-        return member;
-      }
-      return member;
+      return null;
     })
+    .filter(Boolean)
     .join(", ");
 
-  // Remplace tout le contenu de .message
   messagePart.innerHTML = `
     <div class="cercle flex flex-row justify-between p-1">
       <div>
@@ -517,7 +477,6 @@ export function showGroupMessages(group) {
   renderGroupMessages(group);
   setupMessageSending();
 
-  // Gestion de l'ajout de membre
   const addBtn = document.getElementById("add-member-btn");
   const select = document.getElementById("add-member-select");
   if (addBtn && select) {
@@ -529,23 +488,6 @@ export function showGroupMessages(group) {
       }
     };
   }
-   // Ajoute ce bloc après avoir mis à jour messagePart.innerHTML
-  const archiveIcon = document.querySelector('.fa-box-archive');
-  if (archiveIcon) {
-    archiveIcon.parentElement.style.cursor = "pointer";
-    archiveIcon.parentElement.onclick = () => {
-      // Trouve le contact affiché (par exemple le premier membre du groupe qui n'est pas currentUser)
-      const memberName = group.members.find(m => m !== currentUser);
-      const contact = contacts.find(c => c.name === memberName);
-      if (!contact) return;
-
-      // Toggle archive
-      contact.archived = !contact.archived;
-
-      // Tu peux rafraîchir la vue si besoin
-      renderContacts();
-    };
-  }
 }
 
 function setupMessageSending() {
@@ -554,16 +496,13 @@ function setupMessageSending() {
 
   if (!footerInput || !sendBtn) return;
 
-  // Nettoie le champ
   footerInput.value = "";
 
-  // Retire les anciens event listeners en remplaçant les éléments
   const newInput = footerInput.cloneNode(true);
   const newSendBtn = sendBtn.cloneNode(true);
   footerInput.parentNode.replaceChild(newInput, footerInput);
   sendBtn.parentNode.replaceChild(newSendBtn, sendBtn);
 
-  // Ajoute les nouveaux event listeners
   newSendBtn.onclick = (e) => {
     e.preventDefault();
     sendGroupMessage(newInput);
@@ -592,15 +531,12 @@ function sendGroupMessage(input) {
     input.value = "";
     renderGroupMessages(currentGroup);
 
-    // Scroll vers le bas après avoir ajouté le message
     const messagesDiv = document.getElementById("group-messages");
     if (messagesDiv) {
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
   }
 }
-
-
 
 function renderGroupMessages(group) {
   const messagesDiv = document.getElementById("group-messages");
@@ -628,22 +564,18 @@ function renderGroupMessages(group) {
     )
     .join("");
 
-  // Auto-scroll vers le bas
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-
-
 export function renderArchivedContacts() {
-  // S'assure que tous les contacts ont la propriété archived
-  contacts.forEach(c => {
+  contacts.forEach((c) => {
     if (typeof c.archived === "undefined") c.archived = false;
   });
+  console.log(contacts);
 
   clearDiscussion();
 
-  // Ajoute ceci pour vider la zone .message à droite
-  const messagePart = document.querySelector('.last-part .message');
+  const messagePart = document.querySelector(".last-part .message");
   if (messagePart) {
     messagePart.innerHTML = `
       <div class="cercle flex flex-row justify-between p-1">
@@ -678,7 +610,8 @@ export function renderArchivedContacts() {
   list.id = "archived-contacts-list";
   list.className = "mt-4 flex flex-col gap-2";
 
-  const archivedContacts = contacts.filter(c => c.archived===true);
+  const archivedContacts = contacts.filter((c) => c.archived === true);
+  console.log("ARCHIVED ONLY:", archivedContacts);
 
   if (archivedContacts.length === 0) {
     list.innerHTML = `<p class="text-gray-500 text-sm">Aucun contact archivé.</p>`;
@@ -686,18 +619,20 @@ export function renderArchivedContacts() {
     list.innerHTML = archivedContacts
       .map(
         (c) => `
-        <div class="flex items-center gap-2 border p-2 rounded bg-[#f2f0ea]">
-          <div class="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center text-white text-lg font-bold uppercase">
-            ${c.name[0]}
-          </div>
-          <div>
-            <span class="font-semibold">${c.name}</span><br>
-            <span class="text-gray-600 text-sm">${c.phone}</span>
-          </div>
-          <button class="unarchive-btn bg-yellow-300 px-2 py-1 rounded text-xs" data-phone="${c.phone}">
-            Désarchiver
-          </button>
-        </div>
+        <div class="flex items-center justify-between gap-2 border p-2 rounded bg-[#f2f0ea]">
+  <div class="flex items-center gap-2">
+    <div class="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center text-white text-lg font-bold uppercase">
+      ${c.name[0]}
+    </div>
+    <div>
+      <span class="font-semibold">${c.name}</span><br>
+      <span class="text-gray-600 text-sm">${c.phone}</span>
+    </div>
+  </div>
+  <button class="unarchive-btn bg-yellow-300 px-2 py-1 rounded text-xs" data-phone="${c.phone}">
+    Désarchiver
+  </button>
+</div>
       `
       )
       .join("");
@@ -705,11 +640,10 @@ export function renderArchivedContacts() {
 
   discussion.appendChild(list);
 
-  // Action désarchiver
-  list.querySelectorAll('.unarchive-btn').forEach(btn => {
+  list.querySelectorAll(".unarchive-btn").forEach((btn) => {
     btn.onclick = () => {
-      const phone = btn.getAttribute('data-phone');
-      const contact = contacts.find(c => c.phone === phone);
+      const phone = btn.getAttribute("data-phone");
+      const contact = contacts.find((c) => c.phone === phone);
       if (contact) {
         contact.archived = false;
         renderArchivedContacts();
@@ -718,33 +652,11 @@ export function renderArchivedContacts() {
   });
 }
 
-
 export function showContactInMessage(contact) {
-  const messagePart = document.querySelector('.last-part .message');
+  const messagePart = document.querySelector(".last-part .message");
   if (!messagePart) return;
 
-//   messagePart.innerHTML = `
-//     <div class="cercle flex flex-row justify-between p-1">
-//       <div class="flex flex-row items-center gap-2 px-4 pt-2">
-//         <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-lg font-bold uppercase">
-//           ${contact.name[0]}
-//         </div>
-//         <span class="font-semibold text-lg">${contact.name}</span>
-//         <span class="text-gray-600 text-base ml-2">${contact.phone}</span>
-//       </div>
-//       <div class="other-cercle flex flex-row gap-2">
-//         <p class="rounded-full border border-[#978f83] w-[33px] h-[33px] flex flex-row justify-center text-center archive-contact-btn" style="cursor:pointer;">
-//           <i class="fa-solid fa-box-archive mt-2 px-2" style="color: #7c7d7e;"></i>
-//         </p>
-//       </div>
-//     </div>
-//     <div class="trait">
-//       <p class="border-2 border-[#f2f0ea] rounded-full bg-transparent"></p>
-//     </div>
-//   `;
-
-    // Cible le bloc .big-cercle
-  const bigCercle = messagePart.querySelector('.big-cercle');
+  const bigCercle = messagePart.querySelector(".big-cercle");
   if (bigCercle) {
     bigCercle.innerHTML = `
       <div class="flex flex-row items-center gap-2 px-4 pt-2">
@@ -752,29 +664,15 @@ export function showContactInMessage(contact) {
           ${contact.name[0]}
         </div>
         <span class="font-semibold text-lg">${contact.name}</span>
-        <span class="text-gray-600 text-base ml-2">${contact.phone}</span>
       </div>
     `;
   }
-  // Ajoute l'action d'archivage sur l'icône archive
-  const archiveBtn = messagePart.querySelector('.fa-box-archive');
+  const archiveBtn = messagePart.querySelector(".fa-box-archive");
   if (archiveBtn) {
     archiveBtn.parentElement.style.cursor = "pointer";
     archiveBtn.parentElement.onclick = () => {
       contact.archived = true;
       renderContacts();
-      // Optionnel : vider la zone message après archivage
-      // bigCercle.innerHTML = '';
     };
   }
-//   const archiveBtn = messagePart.querySelector('.archive-contact-btn');
-//   if (archiveBtn) {
-//     archiveBtn.onclick = () => {
-//       contact.archived = true;
-//       renderContacts();
-//       messagePart.innerHTML = '';
-//     };
-//   }
 }
-
-

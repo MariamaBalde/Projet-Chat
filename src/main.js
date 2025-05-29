@@ -1,19 +1,27 @@
-import { showAddContactForm, renderContacts,showCreateGroupForm, renderGroups,renderArchivedContacts,showContactInMessage,initializeContacts} from './component.js';
+import {
+  showAddContactForm,
+  renderContacts,
+  showCreateGroupForm,
+  renderGroups,
+  renderArchivedContacts,
+  showContactInMessage,
+  initializeContacts,
+} from "./component.js";
 
-document.addEventListener('DOMContentLoaded', () => {
-      initializeContacts(); // Initialise les contacts existants
+document.addEventListener("DOMContentLoaded", () => {
+  initializeContacts();
   renderContacts();
 
-  const sidebarBtns = document.querySelectorAll('.sidebar .sms');
+  const sidebarBtns = document.querySelectorAll(".sidebar .sms");
 
   function setActiveSidebarBtn(clickedBtn) {
-    sidebarBtns.forEach(btn => btn.classList.remove('active-sidebar-btn'));
-    clickedBtn.classList.add('active-sidebar-btn');
+    sidebarBtns.forEach((btn) => btn.classList.remove("active-sidebar-btn"));
+    clickedBtn.classList.add("active-sidebar-btn");
   }
 
   const nouveauBtn = sidebarBtns[sidebarBtns.length - 1];
   if (nouveauBtn) {
-    nouveauBtn.addEventListener('click', function() {
+    nouveauBtn.addEventListener("click", function () {
       setActiveSidebarBtn(this);
       showAddContactForm();
     });
@@ -21,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const messagesBtn = sidebarBtns[0];
   if (messagesBtn) {
-    messagesBtn.addEventListener('click', function() {
+    messagesBtn.addEventListener("click", function () {
       setActiveSidebarBtn(this);
       renderContacts();
     });
@@ -29,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const groupesBtn = sidebarBtns[1];
   if (groupesBtn) {
-    groupesBtn.addEventListener('click', function() {
+    groupesBtn.addEventListener("click", function () {
       setActiveSidebarBtn(this);
       showCreateGroupForm();
       renderGroups();
@@ -37,15 +45,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   const archivesBtn = sidebarBtns[3];
   if (archivesBtn) {
-    archivesBtn.addEventListener('click', function() {
-              setActiveSidebarBtn(this); // Cette ligne était manquante !
+    archivesBtn.addEventListener("click", function () {
+      setActiveSidebarBtn(this);
       renderArchivedContacts();
     });
   }
 
-  for (let i = 1; i < sidebarBtns.length - 1; i++) {
-    sidebarBtns[i].addEventListener('click', function() {
-      setActiveSidebarBtn(this);
-    });
-  }
+//   for (let i = 1; i < sidebarBtns.length - 1; i++) {
+//     sidebarBtns[i].addEventListener("click", function () {
+//       setActiveSidebarBtn(this);
+//     });
+//   }
 });
