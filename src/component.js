@@ -7,19 +7,29 @@ let currentUser = {
 let groups = [];
 let currentGroup = null;
 let messages = {};
+let filteredContacts = null;
+
 
 function clearDiscussion() {
   const discussion = document.querySelector(".discussion");
-  if (discussion) {
-    discussion.innerHTML = `
-      <h2 class="text-2xl">Discussions</h2>
-      <p class="border-2 border-[#f2f0ea] rounded-full bg-transparent"></p>
-      <div class="recherche w-full">
-        <input class="recherche mt-1 border-2 border-[#f2f0ea] w-full h-8 px-2 rounded" placeholder="Recherche">
-      </div>
-    `;
-  }
+  if (!discussion) return;
+
+  const searchInput = discussion.querySelector(".recherche input");
+  const searchValue = searchInput ? searchInput.value : '';
+
+  discussion.innerHTML = `
+    <h2 class="text-2xl">Discussions</h2>
+    <p class="border-2 border-[#f2f0ea] rounded-full bg-transparent"></p>
+    <div class="recherche w-full">
+      <input class="recherche mt-1 border-2 border-[#f2f0ea] w-full h-8 px-2 rounded" 
+             placeholder="Recherche" 
+             value="${searchValue}">
+    </div>
+  `;
+
+  setupSearch();
 }
+
 
 export function initializeContacts() {
   contacts.forEach((c) => {
@@ -110,7 +120,8 @@ export function addContact(name, phone) {
   renderContactsInMessage();
 }
 
-export function renderContacts() {
+
+export function renderContacts(searchTerm = '') {
   clearDiscussion();
   const discussion = document.querySelector(".discussion");
   if (!discussion) return;
@@ -122,70 +133,69 @@ export function renderContacts() {
   list.id = "contacts-list";
   list.className = "mt-4 flex flex-col gap-2";
 
-  const sortedContacts = [...contacts]
-    .filter((c) => !c.archived)
-    .sort((a, b) =>
-      a.name.localeCompare(b.name, "fr", { sensitivity: "base" })
-    );
+  let contactsToDisplay = [...contacts].filter(c => !c.archived);
+  
+  if (searchTerm) {
+    if (searchTerm === '*') {
+      contactsToDisplay = contactsToDisplay.sort((a, b) => 
+        a.name.localeCompare(b.name, "fr", { sensitivity: "base" })
+      );
+    } else {
+      contactsToDisplay = contactsToDisplay.filter(contact => {
+        const nameMatch = contact.name.toLowerCase().includes(searchTerm.toLowerCase());
+        const phoneMatch = contact.phone.includes(searchTerm);
+        return nameMatch || phoneMatch;
+      });
+    }
+  }
 
-  if (sortedContacts.length === 0) {
-    list.innerHTML = `<p class="text-gray-500 text-sm">Aucun contact pour le moment.</p>`;
+  contactsToDisplay = contactsToDisplay.sort((a, b) => 
+    a.name.localeCompare(b.name, "fr", { sensitivity: "base" })
+  );
+
+  if (contactsToDisplay.length === 0) {
+    list.innerHTML = `<p class="text-gray-500 text-sm">Aucun contact trouvé.</p>`;
   } else {
-    list.innerHTML = sortedContacts
-      .map((c, idx) => {
+    list.innerHTML = contactsToDisplay
+      .map((c) => {
         const contactMessages = messages[c.phone] || [];
-        const lastMessage =
-          contactMessages.length > 0
-            ? contactMessages[contactMessages.length - 1]
-            : null;
+        const lastMessage = contactMessages.length > 0 ? contactMessages[contactMessages.length - 1] : null;
 
         const messageStatus = lastMessage
           ? lastMessage.read
-            ? '<i class="fa-solid fa-check-double text-blue-500"></i>' // Double check pour lu
-            : '<i class="fa-solid fa-check text-gray-500"></i>' // Simple check pour non lu
-          : ""; // Pas d'icône si pas de message
+            ? '<i class="fa-solid fa-check-double text-blue-500"></i>'
+           : '<i class="fa-solid fa-check text-gray-500"></i>'
+          : "";
 
         return `
-  <div class="contact-item flex items-center gap-2 border p-2 rounded bg-[#f2f0ea]" data-contact-index="${contacts.indexOf(
-    c
-  )}">
-    <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-lg font-bold uppercase">
-      ${c.name[0]}
-    </div>
-    <div class="flex-1">
-      <div class="flex justify-between items-center">
-        <span class="font-semibold">${c.name}</span>
-        <div class="flex items-center gap-1">
-          <span class="text-xs">${messageStatus}</span>
-          <span class="text-xs text-gray-500">${
-            lastMessage ? lastMessage.date : ""
-          }</span>
-        </div>
-      </div>
-      <div class="flex justify-between items-center">
-        <span class="text-gray-600 text-sm italic block truncate">
-          ${
-            lastMessage
-              ? lastMessage.text.length > 30
-                ? lastMessage.text.substring(0, 30) + "..."
-                : lastMessage.text
-              : "Aucun message"
-          }
-        </span>
-        ${
-          lastMessage && !lastMessage.read
-            ? '<span class="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white text-xs">1</span>'
-            : ""
-        }
-      </div>
-    </div>
-  </div>
-`;
+          <div class="contact-item flex items-center gap-2 border p-2 rounded bg-[#f2f0ea]" data-contact-index="${contacts.indexOf(c)}">
+            <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-lg font-bold uppercase">
+              ${c.name[0]}
+            </div>
+            <div class="flex-1">
+              <div class="flex justify-between items-center">
+                <span class="font-semibold">${c.name}</span>
+                <div class="flex items-center gap-1">
+                  <span class="text-xs">${messageStatus}</span>
+                  <span class="text-xs text-gray-500">${lastMessage ? lastMessage.date : ""}</span>
+                </div>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-gray-600 text-sm italic block truncate">
+                  ${lastMessage ? (lastMessage.text.length > 30 ? lastMessage.text.substring(0, 30) + "..." : lastMessage.text) : "Aucun message"}
+                </span>
+                ${lastMessage && !lastMessage.read ? '<span class="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white text-xs">1</span>' : ""}
+              </div>
+            </div>
+          </div>
+        `;
       })
       .join("");
   }
 
   discussion.appendChild(list);
+
+  setupSearch();
 
   list.querySelectorAll(".contact-item").forEach((item) => {
     item.onclick = () => {
@@ -194,6 +204,21 @@ export function renderContacts() {
     };
   });
 }
+
+function setupSearch() {
+  const searchInput = document.querySelector(".recherche input");
+  if (!searchInput) return;
+
+  searchInput.removeEventListener('input', handleSearch);
+  
+  searchInput.addEventListener('input', handleSearch);
+}
+
+function handleSearch(e) {
+  const searchTerm = e.target.value.trim();
+  renderContacts(searchTerm);
+}
+
 
 export function renderContactsInMessage() {
   const messagePart = document.querySelector(".discussion .message");
@@ -504,7 +529,6 @@ export function showGroupMessages(group) {
   if (!messagePart) return;
 
   const isAdmin = group.admin === currentUser.name;
-
 const membersDisplay = group.members
   .map((member) => {
     const contact = contacts.find((c) => c.name === member.name && !c.archived);
@@ -521,14 +545,22 @@ const membersDisplay = group.members
               </span>
             </div>
             <div class="flex items-center gap-2">
-              <button class="change-role-btn text-blue-500 text-xs px-2" 
+              <button class="change-role-btn text-blue-500 text-xs px-2 relative group" 
                       data-member="${contact.name}" 
                       data-current-role="${member.role}">
                 <i class="fa-solid fa-user-shield"></i>
+                <span class="tooltip invisible group-hover:visible absolute -top-8 left-1/2 transform -translate-x-1/2 
+                           bg-black text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                  ${member.role === 'admin' ? 'Rétrograder en membre' : 'Promouvoir comme admin'}
+                </span>
               </button>
-              <button class="remove-member-btn text-red-500 text-xs px-2" 
+              <button class="remove-member-btn text-red-500 text-xs px-2 relative group" 
                       data-member="${contact.name}">
                 <i class="fa-solid fa-user-minus"></i>
+                <span class="tooltip invisible group-hover:visible absolute -top-8 left-1/2 transform -translate-x-1/2 
+                           bg-black text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                  Retirer du groupe
+                </span>
               </button>
             </div>
           </div>
@@ -539,14 +571,19 @@ const membersDisplay = group.members
           <span>${contact.name}</span>
           <span class="text-xs px-2 py-1 rounded ${
             member.role === 'admin' ? 'bg-yellow-200' : 'bg-gray-200'
-          }">
+          } relative group">
             ${member.role}
+            <span class="tooltip invisible group-hover:visible absolute -top-8 left-1/2 transform -translate-x-1/2 
+                       bg-black text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+              ${member.role === 'admin' ? 'Administrateur du groupe' : 'Membre simple'}
+            </span>
           </span>
         </div>
       `;
     }
     return null;
   })
+
   .filter(Boolean)
   .join(" ");
 
