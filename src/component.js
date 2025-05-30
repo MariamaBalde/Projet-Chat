@@ -1,7 +1,13 @@
 let contacts = [];
-
+let currentUser = {
+  name: "Moi",
+  phone: "775555555", // Ton numéro
+  isCurrentUser: true
+};
 let groups = [];
-let currentUser = "Moi";
+let currentGroup = null;
+let messages = {};
+// let currentUser = "Moi";
 
 function clearDiscussion() {
   const discussion = document.querySelector(".discussion");
@@ -128,20 +134,64 @@ export function renderContacts() {
     list.innerHTML = `<p class="text-gray-500 text-sm">Aucun contact pour le moment.</p>`;
   } else {
     list.innerHTML = sortedContacts
-      .map(
-        (c, idx) => `
-        <div class="contact-item flex items-center gap-2 border p-2 rounded bg-[#f2f0ea]" data-contact-index="${contacts.indexOf(
-          c
-        )}">
-          <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-lg font-bold uppercase">
-            ${c.name[0]}
+       .map((c, idx) => {
+        const contactMessages = messages[c.phone] || [];
+        const lastMessage = contactMessages.length > 0 
+          ? contactMessages[contactMessages.length - 1] 
+          : { text: 'Aucun message', date: '', read: true };
+        
+        const messageStatus = lastMessage.read 
+          ? '<i class="fa-solid fa-check-double text-blue-500"></i>' // Double check pour lu
+          : '<i class="fa-solid fa-check text-gray-500"></i>'; // Simple check pour non lu
+
+        return `
+          <div class="contact-item flex items-center gap-2 border p-2 rounded bg-[#f2f0ea]" data-contact-index="${contacts.indexOf(c)}">
+            <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-lg font-bold uppercase">
+              ${c.name[0]}
+            </div>
+            <div class="flex-1">
+              <div class="flex justify-between items-center">
+                <span class="font-semibold">${c.name}</span>
+                <div class="flex items-center gap-1">
+                  <span class="text-xs">${messageStatus}</span>
+                  <span class="text-xs text-gray-500">${lastMessage.date}</span>
+                </div>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-gray-600 text-sm italic block truncate">
+                  ${lastMessage.text.length > 30 ? lastMessage.text.substring(0, 30) + '...' : lastMessage.text}
+                </span>
+                ${!lastMessage.read ? '<span class="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white text-xs">1</span>' : ''}
+              </div>
+            </div>
           </div>
-          <div>
-            <span class="font-semibold">${c.name}</span><br>
-            <span class="text-gray-600 text-sm">${c.phone}</span>
-          </div>
-        </div>
-      `
+        `;
+      }
+        //   (c, idx) => {
+        //   // Récupérer le dernier message pour ce contact
+        //   const contactMessages = messages[c.phone] || [];
+        //   const lastMessage = contactMessages.length > 0 
+        //     ? contactMessages[contactMessages.length - 1] 
+        //     : { text: 'Aucun message', date: '' };
+          
+        //   return `
+        //     <div class="contact-item flex items-center gap-2 border p-2 rounded bg-[#f2f0ea]" data-contact-index="${contacts.indexOf(c)}">
+        //       <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-lg font-bold uppercase">
+        //         ${c.name[0]}
+        //       </div>
+        //       <div class="flex-1">
+        //         <div class="flex justify-between items-center">
+                
+        //           <span class="font-semibold">${c.name}</span>
+        //           <span class="text-xs text-gray-500">${lastMessage.date}</span>
+        //         </div>
+        //         <span class="text-gray-600 text-sm italic block truncate">
+        //           ${lastMessage.text.length > 30 ? lastMessage.text.substring(0, 30) + '...' : lastMessage.text}
+        //         </span>
+        //       </div>
+        //     </div>
+        //   `;
+        // }
       )
       .join("");
   }
@@ -207,7 +257,7 @@ export function showCreateGroupForm() {
     <div id="members-list" class="flex flex-col gap-1 mb-2">
       <label>
         <input type="checkbox" checked disabled />
-        <span class="ml-1">${currentUser} (vous)</span>
+        <span class="ml-1">${currentUser.name} (vous)</span>
       </label>
       ${contactsToAdd
         .map(
@@ -306,14 +356,12 @@ export function showCreateGroupForm() {
       .filter((v) => v !== currentUser);
 
     if (selectedMembers.length < 2) {
-      membersError.textContent =
-        "Veuillez ajouter au moins deux membres";
+      membersError.textContent = "Veuillez ajouter au moins deux membres";
       membersError.style.display = "block";
       return;
     } else {
       membersError.style.display = "none";
     }
-
 
     const members = [currentUser, ...selectedMembers];
     const uniqueMembers = [...new Set(members)];
@@ -327,10 +375,14 @@ export function showCreateGroupForm() {
 export function createGroup(name, members) {
   groups.push({
     name,
-    admin: currentUser,
-    adminPhone: contacts.find((c) => c.name === currentUser)?.phone || "",
+    admin: currentUser.name,
+    // admin: currentUser,
+    // adminPhone: contacts.find((c) => c.name === currentUser)?.phone || "",
+    // members,
+    adminPhone: currentUser.phone,
     members,
     messages: [],
+    created: new Date().toISOString(),
   });
 }
 
@@ -410,7 +462,7 @@ export function renderGroups() {
           renderGroups();
         }
       };
-         formDiv.style.display = "block";
+      formDiv.style.display = "block";
     };
   });
 
@@ -422,24 +474,33 @@ export function renderGroups() {
   });
 }
 
-let currentGroup = null;
-
 export function showGroupMessages(group) {
   currentGroup = group;
   const messagePart = document.querySelector(".last-part .message");
   if (!messagePart) return;
 
+  const isAdmin = group.admin === currentUser.name;
+
   const membersDisplay = group.members
     .map((member) => {
       const contact = contacts.find((c) => c.name === member && !c.archived);
       if (contact) {
-        return `${contact.name} 
-        `;
+        if (isAdmin && member !== currentUser.name) {
+          return `
+            <div class="flex items-center justify-between bg-gray-100 rounded p-1 mb-1">
+              <span>${contact.name}</span>
+              <button class="remove-member-btn text-red-500 text-xs px-2" data-member="${contact.name}">
+                <i class="fa-solid fa-user-minus"></i>
+              </button>
+            </div>
+          `;
+        }
+        return `<span class="bg-gray-100 rounded px-2 py-1">${contact.name}</span>`;
       }
       return null;
     })
     .filter(Boolean)
-    .join(", ");
+    .join(" ");
 
   messagePart.innerHTML = `
     <div class="cercle flex flex-row justify-between p-1">
@@ -448,25 +509,33 @@ export function showGroupMessages(group) {
           <div class="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center text-white text-lg font-bold">
             <i class="fa-solid fa-user-group"></i>
           </div>
-          <span class="font-semibold text-lg">${group.name}</span>
+          <div>
+            <span class="font-semibold text-lg">${group.name}</span>
+            ${isAdmin ? '<span class="text-xs bg-yellow-200 px-2 py-1 rounded ml-2">Admin</span>' : ''}
+          </div>
         </div>
-        <div class="text-sm text-blue-900 font-medium px-16 pb-2">
+        <div class="text-sm text-gray-600 px-16 pb-2 flex flex-wrap gap-1">
           ${membersDisplay}
         </div>
       </div>
       <div class="other-cercle flex flex-row gap-2">
-        <p class="rounded-full border border-orange-600 w-[33px] h-[33px] flex flex-row justify-center text-center">
-          <i class="fa-solid fa-delete-left mt-2 px-2" style="color: #ff4d00;"></i>
-        </p>
+         <p
+                class="rounded-full border border-orange-600 w-[33px] h-[33px] flex flex-row justify-center text-center">
+                <i class="fa-solid fa-delete-left mt-2 px-2" style="color: #ff4d00;"></i>
+              </p>
+      
         <p class="rounded-full border border-[#978f83] w-[33px] h-[33px] flex flex-row justify-center text-center">
           <i class="fa-solid fa-box-archive mt-2 px-2" style="color: #7c7d7e;"></i>
         </p>
-        <p class="rounded-full border border-[#252024] w-[33px] h-[33px] flex flex-row justify-center text-center">
-          <i class="fa-solid fa-square mt-2 px-2" style="color: #19191a;"></i>
-        </p>
-        <p class="rounded-full border border-[#9a0609] w-[33px] h-[33px] flex flex-row justify-center text-center">
-          <i class="fa-solid fa-trash mt-2 px-2" style="color: #db0a1f;"></i>
-        </p>
+            <p
+                class="rounded-full border border-[#252024] w-[33px] h-[33px] flex flex-row justify-center text-center">
+                <i class="fa-solid fa-square mt-2 px-2" style="color: #19191a;"></i>
+              </p>
+
+              <p
+                class="rounded-full border border-[#9a0609] w-[33px] h-[33px] flex flex-row justify-center text-center">
+                <i class="fa-solid fa-trash mt-2 px-2" style="color: #db0a1f;"></i>
+              </p>
       </div>
     </div>
     <div class="trait">
@@ -474,21 +543,88 @@ export function showGroupMessages(group) {
     </div>
     <div id="group-messages" class="flex flex-col gap-2 p-4 h-[70vh] overflow-y-auto"></div>
   `;
+
+  // Ajouter les gestionnaires d'événements pour retirer les membres
+  if (isAdmin) {
+    messagePart.querySelectorAll('.remove-member-btn').forEach(btn => {
+      btn.onclick = () => {
+        const memberName = btn.getAttribute('data-member');
+        if (confirm(`Voulez-vous vraiment retirer ${memberName} du groupe ?`)) {
+          group.members = group.members.filter(m => m !== memberName);
+          showGroupMessages(group);
+        }
+      };
+    });
+  }
+
   renderGroupMessages(group);
   setupMessageSending();
-
-  const addBtn = document.getElementById("add-member-btn");
-  const select = document.getElementById("add-member-select");
-  if (addBtn && select) {
-    addBtn.onclick = () => {
-      const name = select.value;
-      if (name) {
-        group.members.push(name);
-        showGroupMessages(group);
-      }
-    };
-  }
 }
+// export function showGroupMessages(group) {
+//   currentGroup = group;
+//   const messagePart = document.querySelector(".last-part .message");
+//   if (!messagePart) return;
+
+//   const membersDisplay = group.members
+//     .map((member) => {
+//       const contact = contacts.find((c) => c.name === member && !c.archived);
+//       if (contact) {
+//         return `${contact.name} 
+//         `;
+//       }
+//       return null;
+//     })
+//     .filter(Boolean)
+//     .join(", ");
+
+//   messagePart.innerHTML = `
+//     <div class="cercle flex flex-row justify-between p-1">
+//       <div>
+//         <div class="flex flex-row items-center gap-2 px-4 pt-2">
+//           <div class="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center text-white text-lg font-bold">
+//             <i class="fa-solid fa-user-group"></i>
+//           </div>
+//           <span class="font-semibold text-lg">${group.name}</span>
+//         </div>
+//         <div class="text-sm text-blue-900 font-medium px-16 pb-2">
+//           ${membersDisplay}
+//         </div>
+//       </div>
+//       <div class="other-cercle flex flex-row gap-2">
+//         <p class="rounded-full border border-orange-600 w-[33px] h-[33px] flex flex-row justify-center text-center">
+//           <i class="fa-solid fa-delete-left mt-2 px-2" style="color: #ff4d00;"></i>
+//         </p>
+//         <p class="rounded-full border border-[#978f83] w-[33px] h-[33px] flex flex-row justify-center text-center">
+//           <i class="fa-solid fa-box-archive mt-2 px-2" style="color: #7c7d7e;"></i>
+//         </p>
+//         <p class="rounded-full border border-[#252024] w-[33px] h-[33px] flex flex-row justify-center text-center">
+//           <i class="fa-solid fa-square mt-2 px-2" style="color: #19191a;"></i>
+//         </p>
+//         <p class="rounded-full border border-[#9a0609] w-[33px] h-[33px] flex flex-row justify-center text-center">
+//           <i class="fa-solid fa-trash mt-2 px-2" style="color: #db0a1f;"></i>
+//         </p>
+//       </div>
+//     </div>
+//     <div class="trait">
+//       <p class="border-2 border-[#f2f0ea] rounded-full bg-transparent"></p>
+//     </div>
+//     <div id="group-messages" class="flex flex-col gap-2 p-4 h-[70vh] overflow-y-auto"></div>
+//   `;
+//   renderGroupMessages(group);
+//   setupMessageSending();
+
+//   const addBtn = document.getElementById("add-member-btn");
+//   const select = document.getElementById("add-member-select");
+//   if (addBtn && select) {
+//     addBtn.onclick = () => {
+//       const name = select.value;
+//       if (name) {
+//         group.members.push(name);
+//         showGroupMessages(group);
+//       }
+//     };
+//   }
+// }
 
 function setupMessageSending() {
   const footerInput = document.querySelector(".footer input");
@@ -652,21 +788,70 @@ export function renderArchivedContacts() {
   });
 }
 
+// export function showContactInMessage(contact) {
+//   const messagePart = document.querySelector(".last-part .message");
+//   if (!messagePart) return;
+
+//   const bigCercle = messagePart.querySelector(".big-cercle");
+//   if (bigCercle) {
+//     bigCercle.innerHTML = `
+//       <div class="flex flex-row items-center gap-2 px-4 pt-2">
+//         <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-lg font-bold uppercase">
+//           ${contact.name[0]}
+//         </div>
+//         <span class="font-semibold text-lg">${contact.name}</span>
+//       </div>
+//     `;
+//   }
+//   const archiveBtn = messagePart.querySelector(".fa-box-archive");
+//   if (archiveBtn) {
+//     archiveBtn.parentElement.style.cursor = "pointer";
+//     archiveBtn.parentElement.onclick = () => {
+//       contact.archived = true;
+//       renderContacts();
+//     };
+//   }
+// }
+
+
+// Pour les messages individuels
 export function showContactInMessage(contact) {
   const messagePart = document.querySelector(".last-part .message");
   if (!messagePart) return;
 
-  const bigCercle = messagePart.querySelector(".big-cercle");
-  if (bigCercle) {
-    bigCercle.innerHTML = `
+  messagePart.innerHTML = `
+    <div class="cercle flex flex-row justify-between p-1">
       <div class="flex flex-row items-center gap-2 px-4 pt-2">
         <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-lg font-bold uppercase">
           ${contact.name[0]}
         </div>
         <span class="font-semibold text-lg">${contact.name}</span>
       </div>
-    `;
-  }
+      <div class="other-cercle flex flex-row gap-2">
+       <p
+                class="rounded-full border border-orange-600 w-[33px] h-[33px] flex flex-row justify-center text-center">
+                <i class="fa-solid fa-delete-left mt-2 px-2" style="color: #ff4d00;"></i>
+              </p>
+        <p class="rounded-full border border-[#978f83] w-[33px] h-[33px] flex flex-row justify-center text-center">
+          <i class="fa-solid fa-box-archive mt-2 px-2" style="color: #7c7d7e;"></i>
+        </p>
+            <p
+                class="rounded-full border border-[#252024] w-[33px] h-[33px] flex flex-row justify-center text-center">
+                <i class="fa-solid fa-square mt-2 px-2" style="color: #19191a;"></i>
+              </p>
+
+              <p
+                class="rounded-full border border-[#9a0609] w-[33px] h-[33px] flex flex-row justify-center text-center">
+                <i class="fa-solid fa-trash mt-2 px-2" style="color: #db0a1f;"></i>
+              </p>
+      </div>
+    </div>
+    <div class="trait">
+      <p class="border-2 border-[#f2f0ea] rounded-full bg-transparent"></p>
+    </div>
+    <div id="contact-messages" class="flex flex-col gap-2 p-4 h-[70vh] overflow-y-auto"></div>
+  `;
+
   const archiveBtn = messagePart.querySelector(".fa-box-archive");
   if (archiveBtn) {
     archiveBtn.parentElement.style.cursor = "pointer";
@@ -674,5 +859,153 @@ export function showContactInMessage(contact) {
       contact.archived = true;
       renderContacts();
     };
+  }
+    markMessagesAsRead(contact);
+  renderContactMessages(contact);
+  setupContactMessageSending(contact);
+}
+
+function renderContactMessages(contact) {
+  const messagesDiv = document.getElementById("contact-messages");
+  if (!messagesDiv) return;
+
+  if (!messages[contact.phone]) messages[contact.phone] = [];
+
+  messagesDiv.innerHTML = messages[contact.phone]
+    .map(
+      (m) => `
+      <div class="flex ${
+        m.sender === currentUser.name ? "justify-end" : "justify-start"
+      }">
+        <div class="rounded-lg shadow px-3 py-2 mb-1 max-w-xs ${
+          m.sender === currentUser .name ? "bg-green-200" : "bg-white"
+        }">
+          ${
+            m.sender !== currentUser .name
+              ? `<div class="text-xs font-bold text-gray-600 mb-1">${m.sender}</div>`
+              : ""
+          }
+          <div class="text-sm">${m.text}</div>
+          <div class="text-[10px] text-right text-gray-400 mt-1">${m.date}</div>
+        </div>
+      </div>
+    `
+    )
+    .join("");
+
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+function setupContactMessageSending(contact) {
+  const footerInput = document.querySelector(".footer input");
+  const sendBtn = document.querySelector(".footer button");
+  if (!footerInput || !sendBtn) return;
+
+  const newInput = footerInput.cloneNode(true);
+  const newSendBtn = sendBtn.cloneNode(true);
+  footerInput.parentNode.replaceChild(newInput, footerInput);
+  sendBtn.parentNode.replaceChild(newSendBtn, sendBtn);
+
+  newSendBtn.onclick = (e) => {
+    e.preventDefault();
+    sendContactMessage(contact, newInput);
+  };
+
+  newInput.onkeydown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      sendContactMessage(contact, newInput);
+    }
+  };
+}
+
+function sendContactMessage(contact, input) {
+  const text = input.value.trim();
+  if (text) {
+    if (!messages[contact.phone]) messages[contact.phone] = [];
+    messages[contact.phone].push({
+      sender: currentUser.name, 
+      text,
+      date: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+            read: false // Message non lu par défaut
+    });
+    input.value = "";
+    renderContactMessages(contact);
+  }
+}
+
+// Pour la diffusion
+export function showBroadcastForm() {
+  const discussion = document.querySelector(".discussion");
+  if (!discussion) return;
+
+  discussion.innerHTML = `
+    <div class="p-4">
+      <h2 class="text-2xl mb-4">Diffusion</h2>
+      <div class="bg-white p-4 rounded shadow">
+        <textarea id="broadcast-message" class="w-full border p-2 rounded mb-4" rows="4" placeholder="Votre message..."></textarea>
+        <div class="mb-4">
+          <h3 class="font-semibold mb-2">Sélectionner les destinataires :</h3>
+          <div id="broadcast-contacts" class="space-y-2">
+            ${contacts
+              .filter((c) => !c.archived)
+              .map(
+                (c) => `
+                <label class="flex items-center space-x-2">
+                  <input type="checkbox" value="${c.phone}" class="broadcast-contact">
+                  <span>${c.name} (${c.phone})</span>
+                </label>
+              `
+              )
+              .join("")}
+          </div>
+        </div>
+        <button id="send-broadcast" class="bg-green-500 text-white px-4 py-2 rounded">Envoyer</button>
+      </div>
+    </div>
+  `;
+
+  const sendBtn = discussion.querySelector("#send-broadcast");
+  if (sendBtn) {
+    sendBtn.onclick = () => {
+      const message = discussion
+        .querySelector("#broadcast-message")
+        .value.trim();
+      const selectedContacts = Array.from(
+        discussion.querySelectorAll(".broadcast-contact:checked")
+      )
+        .map((cb) => contacts.find((c) => c.phone === cb.value))
+        .filter(Boolean);
+
+      if (message && selectedContacts.length > 0) {
+        selectedContacts.forEach((contact) => {
+          if (!messages[contact.phone]) messages[contact.phone] = [];
+          messages[contact.phone].push({
+            sender: currentUser,
+            text: message,
+            date: new Date().toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          });
+        });
+
+        alert(`Message envoyé à ${selectedContacts.length} contact(s)`);
+        discussion.querySelector("#broadcast-message").value = "";
+      }
+    };
+  }
+}
+
+function markMessagesAsRead(contact) {
+  if (messages[contact.phone]) {
+    messages[contact.phone] = messages[contact.phone].map(msg => ({
+      ...msg,
+      read: true
+    }));
+    renderContacts(); // Mettre à jour l'affichage
   }
 }

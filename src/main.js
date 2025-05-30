@@ -5,6 +5,7 @@ import {
   renderGroups,
   renderArchivedContacts,
   showContactInMessage,
+  showBroadcastForm,
   initializeContacts,
 } from "./component.js";
 
@@ -43,6 +44,15 @@ document.addEventListener("DOMContentLoaded", () => {
       renderGroups();
     });
   }
+
+   const diffusionBtn = sidebarBtns[2];
+  if (diffusionBtn) {
+    diffusionBtn.addEventListener("click", function () {
+      setActiveSidebarBtn(this);
+      showBroadcastForm();
+    });
+  } 
+
   const archivesBtn = sidebarBtns[3];
   if (archivesBtn) {
     archivesBtn.addEventListener("click", function () {
@@ -51,9 +61,5 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-//   for (let i = 1; i < sidebarBtns.length - 1; i++) {
-//     sidebarBtns[i].addEventListener("click", function () {
-//       setActiveSidebarBtn(this);
-//     });
-//   }
+
 });
