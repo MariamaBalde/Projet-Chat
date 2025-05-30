@@ -335,10 +335,11 @@ export function showCreateGroupForm() {
     form.querySelector("#new-member-phone").value = "";
   };
 
-  form.onsubmit = (e) => {
+form.onsubmit = (e) => {
   e.preventDefault();
   const name = form.querySelector("#group-name").value.trim();
   const nameError = form.querySelector("#group-name-error");
+  
   if (!name) {
     nameError.textContent = "Le nom du groupe est obligatoire";
     nameError.style.display = "block";
@@ -353,7 +354,7 @@ export function showCreateGroupForm() {
   const membersError = form.querySelector("#members-error");
   const selectedMembers = Array.from(checkedBoxes)
     .map((cb) => cb.value)
-    .filter((v) => v !== currentUser);
+    .filter((v) => v !== currentUser.name);
 
   if (selectedMembers.length < 2) {
     membersError.textContent = "Veuillez ajouter au moins deux membres";
@@ -363,52 +364,35 @@ export function showCreateGroupForm() {
     membersError.style.display = "none";
   }
 
-  const members = [currentUser, ...selectedMembers];
-  const uniqueMembers = [...new Set(members)];
-
-  createGroup(name, uniqueMembers);
+  createGroup(name, selectedMembers);
   form.remove();
   renderGroups();
 };
-  // form.onsubmit = (e) => {
-  //   e.preventDefault();
-  //   const name = form.querySelector("#group-name").value.trim();
-  //   const checkedBoxes = form.querySelectorAll(".member-checkbox:checked");
-  //   const membersError = form.querySelector("#members-error");
-  //   const selectedMembers = Array.from(checkedBoxes)
-  //     .map((cb) => cb.value)
-  //     .filter((v) => v !== currentUser);
 
-  //   if (selectedMembers.length < 2) {
-  //     membersError.textContent = "Veuillez ajouter au moins deux membres";
-  //     membersError.style.display = "block";
-  //     return;
-  //   } else {
-  //     membersError.style.display = "none";
-  //   }
 
-  //   const members = [currentUser, ...selectedMembers];
-  //   const uniqueMembers = [...new Set(members)];
-
-  //   createGroup(name, uniqueMembers);
-  //   form.remove();
-  //   renderGroups();
-  // };
 }
 
 export function createGroup(name, members) {
   groups.push({
     name,
     admin: currentUser.name,
-    // admin: currentUser,
-    // adminPhone: contacts.find((c) => c.name === currentUser)?.phone || "",
-    // members,
     adminPhone: currentUser.phone,
-    members,
+    members: [
+      {
+        name: currentUser.name,
+        role: 'admin'
+      },
+      ...members.map(member => ({
+        name: member,
+        role: 'member'
+      }))
+    ],
     messages: [],
     created: new Date().toISOString(),
   });
 }
+
+
 
 export function renderGroups() {
   const discussion = document.querySelector(".discussion");
@@ -421,7 +405,10 @@ export function renderGroups() {
   list.id = "groups-list";
   list.className = "mt-4 flex flex-col gap-2";
 
-  const myGroups = groups.filter((g) => g.members.includes(currentUser));
+  const myGroups = groups.filter((g) => 
+    g.members.some(m => m.name === currentUser.name)
+  );
+
   if (myGroups.length === 0) {
     list.innerHTML = `<p class="text-gray-500 text-sm">Aucun groupe pour le moment.</p>`;
   } else {
@@ -429,66 +416,38 @@ export function renderGroups() {
       .map(
         (g, idx) => `
           <div class="group-item flex items-center gap-3 border p-2 rounded bg-[#f2f0ea] hover:bg-[#e6eaf7] transition cursor-pointer" data-group-index="${idx}">
-        <div class="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center text-white text-lg font-bold">
-          <i class="fa-solid fa-user-group"></i>
-        </div>
-        <div class="flex-1">
-          <div class="flex justify-between items-center">
-            <span class="font-semibold text-base">${g.name}</span>
-            <button type="button" class="add-member-btn text-xs text-green-600" data-group-index="${idx}">
-              <i class="fa-solid fa-plus" style="color: #000000;"></i>
-            </button>
+            <div class="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center text-white text-lg font-bold">
+              <i class="fa-solid fa-user-group"></i>
+            </div>
+            <div class="flex-1">
+              <div class="flex justify-between items-center">
+                <span class="font-semibold text-base">${g.name}</span>
+                ${g.admin === currentUser.name ? `
+                  <button type="button" class="add-member-btn text-xs text-green-600" data-group-index="${idx}">
+                    <i class="fa-solid fa-plus" style="color: #000000;"></i>
+                  </button>
+                ` : ''}
+              </div>
+              <div class="flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-gray-500">
+                    ${g.members.length} membres
+                  </span>
+                  <span class="text-xs text-yellow-600">
+                    ${g.members.filter(m => m.role === 'admin').length} admin(s)
+                  </span>
+                </div>
+                <span class="w-2 h-2 rounded-full bg-green-500 inline-block ml-2"></span>
+              </div>
+              <div class="add-member-form" id="add-member-form-${idx}" style="display:none;"></div>
+            </div>
           </div>
-          <div class="flex justify-between items-center">
-            <span class="text-xs text-gray-500">Lepp nice</span>
-            <span class="w-2 h-2 rounded-full bg-green-500 inline-block ml-2"></span>
-          </div>
-          <div class="add-member-form" id="add-member-form-${idx}" style="display:none;"></div>
-        </div>
-      </div>
-      `
+        `
       )
       .join("");
   }
 
   discussion.appendChild(list);
-  list.querySelectorAll(".add-member-btn").forEach((btn) => {
-    btn.onclick = (e) => {
-      e.stopPropagation();
-      const idx = btn.getAttribute("data-group-index");
-      const group = myGroups[idx];
-      const formDiv = document.getElementById(`add-member-form-${idx}`);
-
-      const contactsToAdd = contacts.filter(
-        (c) => !group.members.includes(c.name) && !c.archived
-      );
-
-      formDiv.innerHTML = `
-      <div class="flex items-center gap-2 mt-2">
-        <select class="border rounded px-2 py-1 flex-1 add-member-select">
-          <option value="">Sélectionner un contact</option>
-          ${contactsToAdd
-            .map(
-              (c) => `<option value="${c.name}">${c.name} (${c.phone})</option>`
-            )
-            .join("")}
-        </select>
-        <button class="bg-blue-500 text-white px-2 py-1 rounded text-xs add-member-validate">Ajouter</button>
-      </div>
-      
-    `;
-
-      formDiv.querySelector(".add-member-validate").onclick = () => {
-        const select = formDiv.querySelector(".add-member-select");
-        const name = select.value;
-        if (name) {
-          group.members.push(name);
-          renderGroups();
-        }
-      };
-      formDiv.style.display = "block";
-    };
-  });
 
   list.querySelectorAll(".group-item").forEach((item) => {
     item.onclick = () => {
@@ -496,7 +455,48 @@ export function renderGroups() {
       showGroupMessages(myGroups[idx]);
     };
   });
+
+  list.querySelectorAll(".add-member-btn").forEach((btn) => {
+  btn.onclick = (e) => {
+    e.stopPropagation();
+    const idx = btn.getAttribute("data-group-index");
+    const group = myGroups[idx];
+    const formDiv = document.getElementById(`add-member-form-${idx}`);
+
+    const contactsToAdd = contacts.filter(
+      (c) => !group.members.some(m => m.name === c.name) && !c.archived
+    );
+
+    formDiv.innerHTML = `
+      <div class="flex items-center gap-2 mt-2">
+        <select class="border rounded px-2 py-1 flex-1 add-member-select">
+          <option value="">Sélectionner un contact</option>
+          ${contactsToAdd
+            .map(c => `<option value="${c.name}">${c.name} (${c.phone})</option>`)
+            .join("")}
+        </select>
+        <button class="bg-blue-500 text-white px-2 py-1 rounded text-xs add-member-validate">
+          Ajouter
+        </button>
+      </div>
+    `;
+
+    formDiv.querySelector(".add-member-validate").onclick = () => {
+      const select = formDiv.querySelector(".add-member-select");
+      const memberName = select.value;
+      if (memberName) {
+        group.members.push({
+          name: memberName,
+          role: 'member'
+        });
+        renderGroups();
+      }
+    };
+    formDiv.style.display = "block";
+  };
+});
 }
+
 
 export function showGroupMessages(group) {
   currentGroup = group;
@@ -505,26 +505,50 @@ export function showGroupMessages(group) {
 
   const isAdmin = group.admin === currentUser.name;
 
-  const membersDisplay = group.members
-    .map((member) => {
-      const contact = contacts.find((c) => c.name === member && !c.archived);
-      if (contact) {
-        if (isAdmin && member !== currentUser.name) {
-          return `
-            <div class="flex items-center justify-between bg-gray-100 rounded p-1 mb-1">
+const membersDisplay = group.members
+  .map((member) => {
+    const contact = contacts.find((c) => c.name === member.name && !c.archived);
+    if (contact) {
+      if (isAdmin && member.name !== currentUser.name) {
+        return `
+          <div class="flex items-center justify-between bg-gray-100 rounded p-1 mb-1">
+            <div class="flex items-center gap-2">
               <span>${contact.name}</span>
-              <button class="remove-member-btn text-red-500 text-xs px-2" data-member="${contact.name}">
+              <span class="text-xs px-2 py-1 rounded ${
+                member.role === 'admin' ? 'bg-yellow-200' : 'bg-gray-200'
+              }">
+                ${member.role}
+              </span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button class="change-role-btn text-blue-500 text-xs px-2" 
+                      data-member="${contact.name}" 
+                      data-current-role="${member.role}">
+                <i class="fa-solid fa-user-shield"></i>
+              </button>
+              <button class="remove-member-btn text-red-500 text-xs px-2" 
+                      data-member="${contact.name}">
                 <i class="fa-solid fa-user-minus"></i>
               </button>
             </div>
-          `;
-        }
-        return `<span class="bg-gray-100 rounded px-2 py-1">${contact.name}</span>`;
+          </div>
+        `;
       }
-      return null;
-    })
-    .filter(Boolean)
-    .join(" ");
+      return `
+        <div class="flex items-center gap-2 bg-gray-100 rounded p-1 mb-1">
+          <span>${contact.name}</span>
+          <span class="text-xs px-2 py-1 rounded ${
+            member.role === 'admin' ? 'bg-yellow-200' : 'bg-gray-200'
+          }">
+            ${member.role}
+          </span>
+        </div>
+      `;
+    }
+    return null;
+  })
+  .filter(Boolean)
+  .join(" ");
 
   messagePart.innerHTML = `
     <div class="cercle flex flex-row justify-between p-1">
@@ -572,7 +596,6 @@ export function showGroupMessages(group) {
     <div id="group-messages" class="flex flex-col gap-2 p-4 h-[70vh] overflow-y-auto"></div>
   `;
 
-  // Ajouter les gestionnaires d'événements pour retirer les membres
   if (isAdmin) {
     messagePart.querySelectorAll(".remove-member-btn").forEach((btn) => {
       btn.onclick = () => {
@@ -585,6 +608,24 @@ export function showGroupMessages(group) {
     });
   }
 
+if (isAdmin) {
+  messagePart.querySelectorAll(".change-role-btn").forEach((btn) => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const memberName = btn.getAttribute("data-member");
+      const currentRole = btn.getAttribute("data-current-role");
+      const newRole = currentRole === 'admin' ? 'member' : 'admin';
+      
+      if (confirm(`Voulez-vous ${newRole === 'admin' ? 'promouvoir' : 'rétrograder'} ${memberName} ?`)) {
+        const member = group.members.find(m => m.name === memberName);
+        if (member) {
+          member.role = newRole;
+          showGroupMessages(group);
+        }
+      }
+    };
+  });
+}
   renderGroupMessages(group);
   setupMessageSending();
 }
