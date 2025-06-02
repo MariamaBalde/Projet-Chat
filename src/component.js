@@ -8,14 +8,14 @@ let groups = [];
 let currentGroup = null;
 let messages = {};
 let filteredContacts = null;
-
+let drafts = {};
 
 function clearDiscussion() {
   const discussion = document.querySelector(".discussion");
   if (!discussion) return;
 
   const searchInput = discussion.querySelector(".recherche input");
-  const searchValue = searchInput ? searchInput.value : '';
+  const searchValue = searchInput ? searchInput.value : "";
 
   discussion.innerHTML = `
     <h2 class="text-2xl">Discussions</h2>
@@ -29,7 +29,6 @@ function clearDiscussion() {
 
   setupSearch();
 }
-
 
 export function initializeContacts() {
   contacts.forEach((c) => {
@@ -120,8 +119,7 @@ export function addContact(name, phone) {
   renderContactsInMessage();
 }
 
-
-export function renderContacts(searchTerm = '') {
+export function renderContacts(searchTerm = "") {
   clearDiscussion();
   const discussion = document.querySelector(".discussion");
   if (!discussion) return;
@@ -133,23 +131,25 @@ export function renderContacts(searchTerm = '') {
   list.id = "contacts-list";
   list.className = "mt-4 flex flex-col gap-2";
 
-  let contactsToDisplay = [...contacts].filter(c => !c.archived);
-  
+  let contactsToDisplay = [...contacts].filter((c) => !c.archived);
+
   if (searchTerm) {
-    if (searchTerm === '*') {
-      contactsToDisplay = contactsToDisplay.sort((a, b) => 
+    if (searchTerm === "*") {
+      contactsToDisplay = contactsToDisplay.sort((a, b) =>
         a.name.localeCompare(b.name, "fr", { sensitivity: "base" })
       );
     } else {
-      contactsToDisplay = contactsToDisplay.filter(contact => {
-        const nameMatch = contact.name.toLowerCase().includes(searchTerm.toLowerCase());
+      contactsToDisplay = contactsToDisplay.filter((contact) => {
+        const nameMatch = contact.name
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
         const phoneMatch = contact.phone.includes(searchTerm);
         return nameMatch || phoneMatch;
       });
     }
   }
 
-  contactsToDisplay = contactsToDisplay.sort((a, b) => 
+  contactsToDisplay = contactsToDisplay.sort((a, b) =>
     a.name.localeCompare(b.name, "fr", { sensitivity: "base" })
   );
 
@@ -159,36 +159,61 @@ export function renderContacts(searchTerm = '') {
     list.innerHTML = contactsToDisplay
       .map((c) => {
         const contactMessages = messages[c.phone] || [];
-        const lastMessage = contactMessages.length > 0 ? contactMessages[contactMessages.length - 1] : null;
+        const lastMessage =
+          contactMessages.length > 0
+            ? contactMessages[contactMessages.length - 1]
+            : null;
+        const hasDraft = drafts[c.phone];
 
         const messageStatus = lastMessage
           ? lastMessage.read
             ? '<i class="fa-solid fa-check-double text-blue-500"></i>'
-           : '<i class="fa-solid fa-check text-gray-500"></i>'
+            : '<i class="fa-solid fa-check text-gray-500"></i>'
           : "";
 
         return `
-          <div class="contact-item flex items-center gap-2 border p-2 rounded bg-[#f2f0ea]" data-contact-index="${contacts.indexOf(c)}">
-            <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-lg font-bold uppercase">
-              ${c.name[0]}
-            </div>
-            <div class="flex-1">
-              <div class="flex justify-between items-center">
-                <span class="font-semibold">${c.name}</span>
-                <div class="flex items-center gap-1">
-                  <span class="text-xs">${messageStatus}</span>
-                  <span class="text-xs text-gray-500">${lastMessage ? lastMessage.date : ""}</span>
-                </div>
-              </div>
-              <div class="flex justify-between items-center">
-                <span class="text-gray-600 text-sm italic block truncate">
-                  ${lastMessage ? (lastMessage.text.length > 30 ? lastMessage.text.substring(0, 30) + "..." : lastMessage.text) : "Aucun message"}
-                </span>
-                ${lastMessage && !lastMessage.read ? '<span class="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white text-xs">1</span>' : ""}
-              </div>
+      <div class="contact-item flex items-center gap-2 border p-2 rounded bg-[#f2f0ea]" data-contact-index="${contacts.indexOf(
+        c
+      )}">
+        <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-lg font-bold uppercase">
+          ${c.name[0]}
+        </div>
+        <div class="flex-1">
+          <div class="flex justify-between items-center">
+            <span class="font-semibold">${c.name}</span>
+            <div class="flex items-center gap-1">
+              ${
+                hasDraft
+                  ? '<span class="text-green-600 text-xs">Brouillon</span>'
+                  : ""
+              }
+              <span class="text-xs">${messageStatus}</span>
+              <span class="text-xs text-gray-500">${
+                lastMessage ? lastMessage.date : ""
+              }</span>
             </div>
           </div>
-        `;
+          <div class="flex justify-between items-center">
+            <span class="text-gray-600 text-sm italic block truncate">
+              ${
+                hasDraft
+                  ? drafts[c.phone]
+                  : lastMessage
+                  ? lastMessage.text.length > 30
+                    ? lastMessage.text.substring(0, 30) + "..."
+                    : lastMessage.text
+                  : "Aucun message"
+              }
+            </span>
+            ${
+              lastMessage && !lastMessage.read
+                ? '<span class="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white text-xs">1</span>'
+                : ""
+            }
+          </div>
+        </div>
+      </div>
+    `;
       })
       .join("");
   }
@@ -209,16 +234,15 @@ function setupSearch() {
   const searchInput = document.querySelector(".recherche input");
   if (!searchInput) return;
 
-  searchInput.removeEventListener('input', handleSearch);
-  
-  searchInput.addEventListener('input', handleSearch);
+  searchInput.removeEventListener("input", handleSearch);
+
+  searchInput.addEventListener("input", handleSearch);
 }
 
 function handleSearch(e) {
   const searchTerm = e.target.value.trim();
   renderContacts(searchTerm);
 }
-
 
 export function renderContactsInMessage() {
   const messagePart = document.querySelector(".discussion .message");
@@ -360,41 +384,43 @@ export function showCreateGroupForm() {
     form.querySelector("#new-member-phone").value = "";
   };
 
-form.onsubmit = (e) => {
-  e.preventDefault();
-  const name = form.querySelector("#group-name").value.trim();
-  const nameError = form.querySelector("#group-name-error");
-  
-  if (!name) {
-    nameError.textContent = "Le nom du groupe est obligatoire";
-    nameError.style.display = "block";
-    form.querySelector("#group-name").classList.add("border-l-4", "border-red-500");
-    return;
-  } else {
-    nameError.style.display = "none";
-    form.querySelector("#group-name").classList.remove("border-l-4", "border-red-500");
-  }
+  form.onsubmit = (e) => {
+    e.preventDefault();
+    const name = form.querySelector("#group-name").value.trim();
+    const nameError = form.querySelector("#group-name-error");
 
-  const checkedBoxes = form.querySelectorAll(".member-checkbox:checked");
-  const membersError = form.querySelector("#members-error");
-  const selectedMembers = Array.from(checkedBoxes)
-    .map((cb) => cb.value)
-    .filter((v) => v !== currentUser.name);
+    if (!name) {
+      nameError.textContent = "Le nom du groupe est obligatoire";
+      nameError.style.display = "block";
+      form
+        .querySelector("#group-name")
+        .classList.add("border-l-4", "border-red-500");
+      return;
+    } else {
+      nameError.style.display = "none";
+      form
+        .querySelector("#group-name")
+        .classList.remove("border-l-4", "border-red-500");
+    }
 
-  if (selectedMembers.length < 2) {
-    membersError.textContent = "Veuillez ajouter au moins deux membres";
-    membersError.style.display = "block";
-    return;
-  } else {
-    membersError.style.display = "none";
-  }
+    const checkedBoxes = form.querySelectorAll(".member-checkbox:checked");
+    const membersError = form.querySelector("#members-error");
+    const selectedMembers = Array.from(checkedBoxes)
+      .map((cb) => cb.value)
+      .filter((v) => v !== currentUser.name);
 
-  createGroup(name, selectedMembers);
-  form.remove();
-  renderGroups();
-};
+    if (selectedMembers.length < 2) {
+      membersError.textContent = "Veuillez ajouter au moins deux membres";
+      membersError.style.display = "block";
+      return;
+    } else {
+      membersError.style.display = "none";
+    }
 
-
+    createGroup(name, selectedMembers);
+    form.remove();
+    renderGroups();
+  };
 }
 
 export function createGroup(name, members) {
@@ -405,19 +431,17 @@ export function createGroup(name, members) {
     members: [
       {
         name: currentUser.name,
-        role: 'admin'
+        role: "admin",
       },
-      ...members.map(member => ({
+      ...members.map((member) => ({
         name: member,
-        role: 'member'
-      }))
+        role: "member",
+      })),
     ],
     messages: [],
     created: new Date().toISOString(),
   });
 }
-
-
 
 export function renderGroups() {
   const discussion = document.querySelector(".discussion");
@@ -430,8 +454,8 @@ export function renderGroups() {
   list.id = "groups-list";
   list.className = "mt-4 flex flex-col gap-2";
 
-  const myGroups = groups.filter((g) => 
-    g.members.some(m => m.name === currentUser.name)
+  const myGroups = groups.filter((g) =>
+    g.members.some((m) => m.name === currentUser.name)
   );
 
   if (myGroups.length === 0) {
@@ -440,34 +464,36 @@ export function renderGroups() {
     list.innerHTML = myGroups
       .map(
         (g, idx) => `
-          <div class="group-item flex items-center gap-3 border p-2 rounded bg-[#f2f0ea] hover:bg-[#e6eaf7] transition cursor-pointer" data-group-index="${idx}">
-            <div class="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center text-white text-lg font-bold">
-              <i class="fa-solid fa-user-group"></i>
-            </div>
-            <div class="flex-1">
-              <div class="flex justify-between items-center">
-                <span class="font-semibold text-base">${g.name}</span>
-                ${g.admin === currentUser.name ? `
-                  <button type="button" class="add-member-btn text-xs text-green-600" data-group-index="${idx}">
-                    <i class="fa-solid fa-plus" style="color: #000000;"></i>
-                  </button>
-                ` : ''}
-              </div>
-              <div class="flex justify-between items-center">
-                <div class="flex items-center gap-2">
-                  <span class="text-xs text-gray-500">
-                    ${g.members.length} membres
-                  </span>
-                  <span class="text-xs text-yellow-600">
-                    ${g.members.filter(m => m.role === 'admin').length} admin(s)
-                  </span>
-                </div>
-                <span class="w-2 h-2 rounded-full bg-green-500 inline-block ml-2"></span>
-              </div>
-              <div class="add-member-form" id="add-member-form-${idx}" style="display:none;"></div>
-            </div>
+      <div class="group-item flex items-center gap-3 border p-2 rounded bg-[#f2f0ea] hover:bg-[#e6eaf7] transition cursor-pointer" data-group-index="${idx}">
+        <div class="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center text-white text-lg font-bold">
+          <i class="fa-solid fa-user-group"></i>
+        </div>
+        <div class="flex-1">
+          <div class="flex justify-between items-center">
+            <span class="font-semibold text-base">${g.name}</span>
+            ${
+              drafts[g.name]
+                ? '<span class="text-green-600 text-xs">Brouillon</span>'
+                : ""
+            }
+            ${
+              g.admin === currentUser.name
+                ? `
+              <button type="button" class="add-member-btn text-xs text-green-600" data-group-index="${idx}">
+                <i class="fa-solid fa-plus" style="color: #000000;"></i>
+              </button>
+            `
+                : ""
+            }
           </div>
-        `
+          <div class="flex justify-between items-center">
+            <span class="text-gray-600 text-sm italic block truncate">
+              ${drafts[g.name] || "Aucun message"}
+            </span>
+          </div>
+        </div>
+      </div>
+    `
       )
       .join("");
   }
@@ -482,22 +508,24 @@ export function renderGroups() {
   });
 
   list.querySelectorAll(".add-member-btn").forEach((btn) => {
-  btn.onclick = (e) => {
-    e.stopPropagation();
-    const idx = btn.getAttribute("data-group-index");
-    const group = myGroups[idx];
-    const formDiv = document.getElementById(`add-member-form-${idx}`);
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const idx = btn.getAttribute("data-group-index");
+      const group = myGroups[idx];
+      const formDiv = document.getElementById(`add-member-form-${idx}`);
 
-    const contactsToAdd = contacts.filter(
-      (c) => !group.members.some(m => m.name === c.name) && !c.archived
-    );
+      const contactsToAdd = contacts.filter(
+        (c) => !group.members.some((m) => m.name === c.name) && !c.archived
+      );
 
-    formDiv.innerHTML = `
+      formDiv.innerHTML = `
       <div class="flex items-center gap-2 mt-2">
         <select class="border rounded px-2 py-1 flex-1 add-member-select">
           <option value="">Sélectionner un contact</option>
           ${contactsToAdd
-            .map(c => `<option value="${c.name}">${c.name} (${c.phone})</option>`)
+            .map(
+              (c) => `<option value="${c.name}">${c.name} (${c.phone})</option>`
+            )
             .join("")}
         </select>
         <button class="bg-blue-500 text-white px-2 py-1 rounded text-xs add-member-validate">
@@ -506,22 +534,21 @@ export function renderGroups() {
       </div>
     `;
 
-    formDiv.querySelector(".add-member-validate").onclick = () => {
-      const select = formDiv.querySelector(".add-member-select");
-      const memberName = select.value;
-      if (memberName) {
-        group.members.push({
-          name: memberName,
-          role: 'member'
-        });
-        renderGroups();
-      }
+      formDiv.querySelector(".add-member-validate").onclick = () => {
+        const select = formDiv.querySelector(".add-member-select");
+        const memberName = select.value;
+        if (memberName) {
+          group.members.push({
+            name: memberName,
+            role: "member",
+          });
+          renderGroups();
+        }
+      };
+      formDiv.style.display = "block";
     };
-    formDiv.style.display = "block";
-  };
-});
+  });
 }
-
 
 export function showGroupMessages(group) {
   currentGroup = group;
@@ -529,17 +556,19 @@ export function showGroupMessages(group) {
   if (!messagePart) return;
 
   const isAdmin = group.admin === currentUser.name;
-const membersDisplay = group.members
-  .map((member) => {
-    const contact = contacts.find((c) => c.name === member.name && !c.archived);
-    if (contact) {
-      if (isAdmin && member.name !== currentUser.name) {
-        return `
+  const membersDisplay = group.members
+    .map((member) => {
+      const contact = contacts.find(
+        (c) => c.name === member.name && !c.archived
+      );
+      if (contact) {
+        if (isAdmin && member.name !== currentUser.name) {
+          return `
           <div class="flex items-center justify-between bg-gray-100 rounded p-1 mb-1">
             <div class="flex items-center gap-2">
               <span>${contact.name}</span>
               <span class="text-xs px-2 py-1 rounded ${
-                member.role === 'admin' ? 'bg-yellow-200' : 'bg-gray-200'
+                member.role === "admin" ? "bg-yellow-200" : "bg-gray-200"
               }">
                 ${member.role}
               </span>
@@ -551,7 +580,11 @@ const membersDisplay = group.members
                 <i class="fa-solid fa-user-shield"></i>
                 <span class="tooltip invisible group-hover:visible absolute -top-8 left-1/2 transform -translate-x-1/2 
                            bg-black text-white text-xs rounded py-1 px-2 whitespace-nowrap">
-                  ${member.role === 'admin' ? 'Rétrograder en membre' : 'Promouvoir comme admin'}
+                  ${
+                    member.role === "admin"
+                      ? "Rétrograder en membre"
+                      : "Promouvoir comme admin"
+                  }
                 </span>
               </button>
               <button class="remove-member-btn text-red-500 text-xs px-2 relative group" 
@@ -565,27 +598,31 @@ const membersDisplay = group.members
             </div>
           </div>
         `;
-      }
-      return `
+        }
+        return `
         <div class="flex items-center gap-2 bg-gray-100 rounded p-1 mb-1">
           <span>${contact.name}</span>
           <span class="text-xs px-2 py-1 rounded ${
-            member.role === 'admin' ? 'bg-yellow-200' : 'bg-gray-200'
+            member.role === "admin" ? "bg-yellow-200" : "bg-gray-200"
           } relative group">
             ${member.role}
             <span class="tooltip invisible group-hover:visible absolute -top-8 left-1/2 transform -translate-x-1/2 
                        bg-black text-white text-xs rounded py-1 px-2 whitespace-nowrap">
-              ${member.role === 'admin' ? 'Administrateur du groupe' : 'Membre simple'}
+              ${
+                member.role === "admin"
+                  ? "Administrateur du groupe"
+                  : "Membre simple"
+              }
             </span>
           </span>
         </div>
       `;
-    }
-    return null;
-  })
+      }
+      return null;
+    })
 
-  .filter(Boolean)
-  .join(" ");
+    .filter(Boolean)
+    .join(" ");
 
   messagePart.innerHTML = `
     <div class="cercle flex flex-row justify-between p-1">
@@ -645,24 +682,30 @@ const membersDisplay = group.members
     });
   }
 
-if (isAdmin) {
-  messagePart.querySelectorAll(".change-role-btn").forEach((btn) => {
-    btn.onclick = (e) => {
-      e.stopPropagation();
-      const memberName = btn.getAttribute("data-member");
-      const currentRole = btn.getAttribute("data-current-role");
-      const newRole = currentRole === 'admin' ? 'member' : 'admin';
-      
-      if (confirm(`Voulez-vous ${newRole === 'admin' ? 'promouvoir' : 'rétrograder'} ${memberName} ?`)) {
-        const member = group.members.find(m => m.name === memberName);
-        if (member) {
-          member.role = newRole;
-          showGroupMessages(group);
+  if (isAdmin) {
+    messagePart.querySelectorAll(".change-role-btn").forEach((btn) => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const memberName = btn.getAttribute("data-member");
+        const currentRole = btn.getAttribute("data-current-role");
+        const newRole = currentRole === "admin" ? "member" : "admin";
+
+        if (
+          confirm(
+            `Voulez-vous ${
+              newRole === "admin" ? "promouvoir" : "rétrograder"
+            } ${memberName} ?`
+          )
+        ) {
+          const member = group.members.find((m) => m.name === memberName);
+          if (member) {
+            member.role = newRole;
+            showGroupMessages(group);
+          }
         }
-      }
-    };
-  });
-}
+      };
+    });
+  }
   renderGroupMessages(group);
   setupMessageSending();
 }
@@ -673,22 +716,43 @@ function setupMessageSending() {
 
   if (!footerInput || !sendBtn) return;
 
-  footerInput.value = "";
+  if (currentGroup && drafts[currentGroup.name]) {
+    footerInput.value = drafts[currentGroup.name];
+  }
 
   const newInput = footerInput.cloneNode(true);
   const newSendBtn = sendBtn.cloneNode(true);
   footerInput.parentNode.replaceChild(newInput, footerInput);
   sendBtn.parentNode.replaceChild(newSendBtn, sendBtn);
 
+  document.addEventListener("click", function saveDraft(e) {
+    if (!e.target.closest(".message") && !e.target.closest(".footer")) {
+      const text = newInput.value.trim();
+      if (currentGroup && text) {
+        drafts[currentGroup.name] = text;
+        renderGroups();
+      }
+      document.removeEventListener("click", saveDraft);
+    }
+  });
+
   newSendBtn.onclick = (e) => {
     e.preventDefault();
-    sendGroupMessage(newInput);
+    if (currentGroup) {
+      delete drafts[currentGroup.name];
+      sendGroupMessage(newInput);
+      renderGroups();
+    }
   };
 
   newInput.onkeydown = (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      sendGroupMessage(newInput);
+      if (currentGroup) {
+        delete drafts[currentGroup.name];
+        sendGroupMessage(newInput);
+        renderGroups();
+      }
     }
   };
 }
@@ -932,20 +996,45 @@ function setupContactMessageSending(contact) {
   const sendBtn = document.querySelector(".footer button");
   if (!footerInput || !sendBtn) return;
 
+  if (drafts[contact.phone]) {
+    footerInput.value = drafts[contact.phone];
+  }
+
   const newInput = footerInput.cloneNode(true);
   const newSendBtn = sendBtn.cloneNode(true);
   footerInput.parentNode.replaceChild(newInput, footerInput);
   sendBtn.parentNode.replaceChild(newSendBtn, sendBtn);
 
+  document.addEventListener("click", function saveDraft(e) {
+    if (!e.target.closest(".message") && !e.target.closest(".footer")) {
+      const text = newInput.value.trim();
+      if (text) {
+        drafts[contact.phone] = text;
+        renderContacts();
+      }
+      document.removeEventListener("click", saveDraft);
+    }
+  });
+
   newSendBtn.onclick = (e) => {
     e.preventDefault();
-    sendContactMessage(contact, newInput);
+    const text = newInput.value.trim();
+    if (text) {
+      delete drafts[contact.phone];
+      sendContactMessage(contact, newInput);
+      renderContacts();
+    }
   };
 
   newInput.onkeydown = (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      sendContactMessage(contact, newInput);
+      const text = newInput.value.trim();
+      if (text) {
+        delete drafts[contact.phone];
+        sendContactMessage(contact, newInput);
+        renderContacts();
+      }
     }
   };
 }
@@ -961,7 +1050,7 @@ function sendContactMessage(contact, input) {
         hour: "2-digit",
         minute: "2-digit",
       }),
-      read: false, // Message non lu par défaut
+      read: false,
     });
     input.value = "";
     renderContactMessages(contact);
@@ -1084,6 +1173,6 @@ function markMessagesAsRead(contact) {
       ...msg,
       read: true,
     }));
-    renderContacts(); // Mettre à jour l'affichage
+    renderContacts();
   }
 }
