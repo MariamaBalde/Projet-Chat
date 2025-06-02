@@ -11,17 +11,13 @@ import {
 } from "./component.js";
 
 import {
-   checkAuth,
-   showLoginPage,
-   showApp  ,
- } from "./connexion.js";
+  checkAuth,
+  showLoginPage,
+  showApp,
+} from "./connexion.js";
 
 document.addEventListener("DOMContentLoaded", () => {
-
-
-
   if (!checkAuth()) {
-  
     showLoginPage();
   } else {
     const userData = JSON.parse(localStorage.getItem("currentUser"));
@@ -34,7 +30,7 @@ document.addEventListener("appReady", (e) => {
   setCurrentUser(userData);
   initializeContacts();
   renderContacts();
-  setupSidebarButtons();
+  setupSidebarButtons(); 
 });
 
 function setupSidebarButtons() {
@@ -95,14 +91,4 @@ function setupSidebarButtons() {
       }
     });
   }
-}
-
-const logoutBtn = document.getElementById("logout-btn");
-if (logoutBtn) {
-  logoutBtn.addEventListener("click", function () {
-    if (confirm("Voulez-vous vraiment vous déconnecter ?")) {
-      localStorage.removeItem("currentUser");
-      showLoginPage();
-    }
-  });
 }
