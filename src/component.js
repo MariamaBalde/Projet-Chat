@@ -10,6 +10,14 @@ let messages = {};
 let filteredContacts = null;
 let drafts = {};
 
+export function setCurrentUser(userData) {
+  currentUser = {
+    name: userData.name,
+    phone: userData.phone,
+    isCurrentUser: true
+  };
+}
+
 function clearDiscussion() {
   const discussion = document.querySelector(".discussion");
   if (!discussion) return;

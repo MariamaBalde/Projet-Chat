@@ -13,7 +13,8 @@
 </head>
 
 <body>
-  <div id="app">
+    <div id="login"></div>
+  <div id="app"  style="display: none;">
     <div
       class="container mx-auto mt-5 h-[920px]  shadow-[0_0_20px_rgba(0,0,0,0.15)] overflow-hidden bg-white rounded  flex flex-row">
       <div class="sidebar basis-28 bg-[#f0efe8] font-medium px-2 flex flex-col justify-center gap-4">
@@ -38,6 +39,12 @@
         <button class="sms flex flex-col justify-center text-center border-2 border-yellow-500 rounded-lg p-5">
           <i class="fa-solid fa-plus" style="color: #000000;"></i>
           <p>Nouveau</p>
+        </button>
+        <!-- Ajouter ce bouton dans la sidebar, après les autres boutons -->
+        <button class="sms flex flex-col justify-center text-center border-2 border-yellow-500 rounded-lg p-5"
+          id="logout-btn">
+          <i class="fa-solid fa-sign-out-alt" style="color: #000000;"></i>
+          <p>Déconnexion</p>
         </button>
       </div>
       <div class="discussion basis-2/4 bg-[#f9f7f5] p-2">
