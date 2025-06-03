@@ -3,6 +3,12 @@
 @tailwind utilities;
 
 .active-sidebar-btn {
-  background-color: #e1b44a ;
-  border-color: #eab308;  
+  background-color: #e1b44a !important;
+  border-color: #eab308 !important;
+  color: #000000;
+}
+
+.sidebar .sms:hover {
+  background-color: #f3d38a;
+  transition: background-color 0.2s;
 }
